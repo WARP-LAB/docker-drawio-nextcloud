@@ -1,0 +1,21 @@
+services:
+  drawio:
+    container_name: drawio
+    build:
+      context: drawio-base
+      dockerfile: Dockerfile
+    ports:
+      - "${WEB_PORT_HTTP}:8080"
+    networks:
+      - drawionet
+    environment:
+      - DRAWIO_SERVER_URL=${DRAWIO_SERVER_URL}
+      - DRAWIO_BASE_URL=${DRAWIO_BASE_URL}
+      - DRAWIO_CSP_HEADER=${DRAWIO_CSP_HEADER}
+      - DRAWIO_VIEWER_URL=${DRAWIO_VIEWER_URL}
+      - DRAWIO_LIGHTBOX_URL=${DRAWIO_LIGHTBOX_URL}
+      - DRAWIO_CONFIG=${DRAWIO_CONFIG}
+      - DRAWIO_USE_HTTP=1
+    restart: unless-stopped
+networks:
+  drawionet:

@@ -1,0 +1,37 @@
+services:
+  drawio-image-export:
+    container_name: drawio-image-export
+    build:
+      context: image-export
+      dockerfile: Dockerfile
+    expose:
+      - "8000"
+    networks:
+      - drawionet
+    volumes:
+      - ./fonts:/usr/share/fonts/drawio
+    environment:
+      - DRAWIO_BASE_URL=${DRAWIO_BASE_URL}
+  drawio:
+    container_name: drawio
+    build:
+      context: drawio-base
+      dockerfile: Dockerfile
+    ports:
+      - "${WEB_PORT_HTTP}:8080"
+    depends_on:
+      - drawio-image-export
+    networks:
+      - drawionet
+    environment:
+      - EXPORT_URL=http://drawio-image-export:8000/
+      - DRAWIO_SERVER_URL=${DRAWIO_SERVER_URL}
+      - DRAWIO_BASE_URL=${DRAWIO_BASE_URL}
+      - DRAWIO_CSP_HEADER=${DRAWIO_CSP_HEADER}
+      - DRAWIO_VIEWER_URL=${DRAWIO_VIEWER_URL}
+      - DRAWIO_LIGHTBOX_URL=${DRAWIO_LIGHTBOX_URL}
+      - DRAWIO_CONFIG=${DRAWIO_CONFIG}
+      - DRAWIO_USE_HTTP=1
+    restart: unless-stopped
+networks:
+  drawionet:
