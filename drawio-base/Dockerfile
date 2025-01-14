@@ -9,13 +9,9 @@ RUN apt-get update -y && \
         git
 
 RUN cd /tmp && \
-    # git clone --depth 1 https://github.com/jgraph/drawio.git && \
-    # cd /tmp/drawio/etc/build/ && \
-    # ant war
-    # 24.7.17
-    git clone https://github.com/jgraph/drawio.git && \
-    cd /tmp/drawio && \
-    git reset --hard 271f52e && \
+    REPO=https://github.com/jgraph/drawio.git && \
+    git clone $REPO --single-branch --branch \
+    $(git ls-remote --tags $REPO | grep -v '\^{}' | cut -d/ -f3 | sort -V | tail -n1) && \
     cd /tmp/drawio/etc/build/ && \
     ant war
 

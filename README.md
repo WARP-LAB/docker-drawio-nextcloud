@@ -2,9 +2,14 @@
 
 Reasons for this:
 
-- the official [docker-drawio](https://github.com/jgraph/docker-drawio) image is currently broken because of [upstream changes](https://github.com/jgraph/drawio/commit/2a6f49ab0fbe6e61ae6d0c2147e0e51961d4c843)
-- official image tries to do SSL termination (via self signed or letsencrypt). naah, for that we have usual SSL termination proxy shtick, thus drawio should be HTTP only
-- used within Nextcloud web interface instance (mostly for sharing), and via [draw.io desktop app](https://www.drawio.com/blog/diagrams-offline) for locally synced files, i.e., no other file storage drivers needed (Google Drive, OneDrive)
+- the official [docker-drawio](https://github.com/jgraph/docker-drawio) image
+  - uses dev branch of [drawio](https://github.com/jgraph/drawio)
+  - ~~is~~ was broken because of [upstream changes](https://github.com/jgraph/drawio/commit/2a6f49ab0fbe6e61ae6d0c2147e0e51961d4c843)
+  - tries to do SSL termination (via self signed or letsencrypt)
+- this
+  - uses latest tagged release version of [drawio](https://github.com/jgraph/drawio/releases)
+  - this is HTTP only and does not enforce signing, as SSL termination is left to proxy
+  - is used within existing Nextcloud instance - web interface is mostly for sharing, and [draw.io desktop app](https://www.drawio.com/blog/diagrams-offline) is for actually working on locally synced files, i.e., no other file storage drivers needed (Google Drive, OneDrive)
 
 ## Install
 
