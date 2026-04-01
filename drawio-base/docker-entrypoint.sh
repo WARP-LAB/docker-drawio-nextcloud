@@ -26,18 +26,39 @@ elif [[ "${EXPORT_URL}" ]]; then
 fi
 #DRAWIO_SERVER_URL is the new URL of the deployment, e.g. https://www.example.com/drawio/
 #DRAWIO_BASE_URL is still used by viewer, lightbox and embed. For backwards compatibility, DRAWIO_SERVER_URL is set to DRAWIO_BASE_URL if not specified.
-if [[ "${DRAWIO_SERVER_URL}" ]]; then
-    echo "window.DRAWIO_SERVER_URL = '${DRAWIO_SERVER_URL}';" >> $CATALINA_HOME/webapps/draw/js/PreConfig.js
-    echo "window.DRAWIO_BASE_URL = '${DRAWIO_BASE_URL:-${DRAWIO_SERVER_URL:0:$((${#DRAWIO_SERVER_URL}-1))}}';" >> $CATALINA_HOME/webapps/draw/js/PreConfig.js
+# Strip trailing slash from DRAWIO_SERVER_URL to get base URL
+if [[ -n "$DRAWIO_SERVER_URL" ]]; then
+  DRAWIO_BASE_URL_VALUE="${DRAWIO_SERVER_URL%/}"
 else
-    echo "window.DRAWIO_BASE_URL = '${DRAWIO_BASE_URL:-http://localhost:8080}';" >> $CATALINA_HOME/webapps/draw/js/PreConfig.js
-    echo "window.DRAWIO_SERVER_URL = window.DRAWIO_BASE_URL + '/';" >> $CATALINA_HOME/webapps/draw/js/PreConfig.js
+  DRAWIO_BASE_URL_VALUE="http://localhost:8080"
+fi
+
+# Write it to PreConfig.js
+echo "window.DRAWIO_SERVER_URL = '${DRAWIO_SERVER_URL}';" >> $CATALINA_HOME/webapps/draw/js/PreConfig.js
+echo "window.DRAWIO_BASE_URL = '${DRAWIO_BASE_URL_VALUE}';" >> $CATALINA_HOME/webapps/draw/js/PreConfig.js
+
+# Dynamically update Tomcat context path if DRAWIO_SERVER_URL ends in a subpath
+URL_PATH=$(echo "${DRAWIO_SERVER_URL}" | sed -E 's|^https?://[^/]+||; s|[?#].*$||; s|/$||')
+if [ -z "$URL_PATH" ]; then
+  CONTEXT_PATH=""
+else
+  CONTEXT_PATH="/$(basename "$URL_PATH")"
+fi
+
+if [ -n "$DRAWIO_SERVER_URL" ] && [ -n "$CONTEXT_PATH" ]; then
+  echo "Updating Tomcat context path to '${CONTEXT_PATH}'"
+  xmlstarlet ed -P -S -L \
+    -u '/Server/Service/Engine/Host/Context/@path' -v "${CONTEXT_PATH}" \
+    -u '/Server/Service/Engine/Host/Context/@docBase' -v 'draw' \
+    conf/server.xml
+else
+  echo "Tomcat context remains at root '/'"
 fi
 #DRAWIO_VIEWER_URL is path to the viewer js, e.g. https://www.example.com/js/viewer.min.js
 echo "window.DRAWIO_VIEWER_URL = '${DRAWIO_VIEWER_URL}';" >> $CATALINA_HOME/webapps/draw/js/PreConfig.js
 #DRAWIO_LIGHTBOX_URL Replace with your lightbox URL, eg. https://www.example.com
 echo "window.DRAWIO_LIGHTBOX_URL = '${DRAWIO_LIGHTBOX_URL}';" >> $CATALINA_HOME/webapps/draw/js/PreConfig.js
-echo "window.DRAW_MATH_URL = 'math/es5';" >> $CATALINA_HOME/webapps/draw/js/PreConfig.js
+echo "window.DRAW_MATH_URL = 'math4/es5';" >> $CATALINA_HOME/webapps/draw/js/PreConfig.js
 #Custom draw.io configurations. For more details, https://www.drawio.com/doc/faq/configure-diagram-editor
 echo "window.DRAWIO_CONFIG = ${DRAWIO_CONFIG:-null};" >> $CATALINA_HOME/webapps/draw/js/PreConfig.js
 #Real-time configuration
@@ -48,7 +69,7 @@ echo "urlParams['db'] = '0'; //dropbox" >> $CATALINA_HOME/webapps/draw/js/PreCon
 echo "urlParams['gh'] = '0'; //github" >> $CATALINA_HOME/webapps/draw/js/PreConfig.js
 echo "urlParams['tr'] = '0'; //trello" >> $CATALINA_HOME/webapps/draw/js/PreConfig.js
 
-#Google Drive
+#Google Drive 
 if [[ -z "${DRAWIO_GOOGLE_CLIENT_ID}" ]]; then
     echo "urlParams['gapi'] = '0'; //Google Drive"  >> $CATALINA_HOME/webapps/draw/js/PreConfig.js
 else
@@ -57,7 +78,7 @@ else
     echo "window.DRAWIO_GOOGLE_CLIENT_ID = '${DRAWIO_GOOGLE_CLIENT_ID}'; " >> $CATALINA_HOME/webapps/draw/js/PreConfig.js
     echo -n "${DRAWIO_GOOGLE_CLIENT_ID}" > $CATALINA_HOME/webapps/draw/WEB-INF/google_client_id
     echo -n "${DRAWIO_GOOGLE_CLIENT_SECRET}" > $CATALINA_HOME/webapps/draw/WEB-INF/google_client_secret
-    #If you want to use the editor as a viewer also, you can create another app with read-only access. You can use the same info as above if write-access is not an issue.
+    #If you want to use the editor as a viewer also, you can create another app with read-only access. You can use the same info as above if write-access is not an issue. 
     if [[ "${DRAWIO_GOOGLE_VIEWER_CLIENT_ID}" ]]; then
         echo "window.DRAWIO_GOOGLE_VIEWER_APP_ID = '${DRAWIO_GOOGLE_VIEWER_APP_ID}'; " >> $CATALINA_HOME/webapps/draw/js/PreConfig.js
         echo "window.DRAWIO_GOOGLE_VIEWER_CLIENT_ID = '${DRAWIO_GOOGLE_VIEWER_CLIENT_ID}'; " >> $CATALINA_HOME/webapps/draw/js/PreConfig.js
@@ -99,7 +120,6 @@ cat $CATALINA_HOME/webapps/draw/js/PreConfig.js
 echo "Init PostConfig.js"
 
 #null'ing of global vars need to be after init.js
-echo "window.VSD_CONVERT_URL = null;" > $CATALINA_HOME/webapps/draw/js/PostConfig.js
 echo "window.ICONSEARCH_PATH = null;" >> $CATALINA_HOME/webapps/draw/js/PostConfig.js
 echo "EditorUi.enableLogging = false; //Disable logging" >> $CATALINA_HOME/webapps/draw/js/PostConfig.js
 
