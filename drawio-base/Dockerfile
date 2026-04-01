@@ -1,4 +1,4 @@
-FROM openjdk:11-jdk-slim AS build
+FROM eclipse-temurin:11-jdk-jammy AS build
 
 RUN apt-get update -y && \
 # this solves some weird issue with openjdk-11-jdk-headless
@@ -9,16 +9,14 @@ RUN apt-get update -y && \
         git
 
 RUN cd /tmp && \
-    REPO=https://github.com/jgraph/drawio.git && \
-    git clone $REPO --single-branch --branch \
-    $(git ls-remote --tags $REPO | grep -v '\^{}' | cut -d/ -f3 | sort -V | tail -n1) && \
+    git clone --depth 1 https://github.com/jgraph/drawio.git && \
     cd /tmp/drawio/etc/build/ && \
     ant war
 
-FROM tomcat:9-jre11
+FROM tomcat:9.0-jdk11-temurin
 
-LABEL maintainer="JGraph Ltd" \
-      org.opencontainers.image.authors="JGraph Ltd" \
+LABEL maintainer="draw.io Ltd" \
+      org.opencontainers.image.authors="draw.io Ltd" \
       org.opencontainers.image.url="https://www.drawio.com" \
       org.opencontainers.image.source="https://github.com/jgraph/docker-drawio"
 
